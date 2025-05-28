@@ -8,5 +8,18 @@
 profile_default/
 ipython_config.py
 
+### VisualStudioCode ###
+.vscode/*      # Maybe .vscode/**/* instead - see comments
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+**/.history
+
+# End of https://www.gitignore.io/api/visualstudiocode
+**/__pycache__/# Python cache files
 # Remove previous ipynb_checkpoints
 #   git rm -r .ipynb_checkpoints/
