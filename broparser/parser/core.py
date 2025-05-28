@@ -2,7 +2,7 @@
 from typing import Dict, List
 import xml.etree.ElementTree as ET
 
-from filter import wellFilter
+from .filter import wellFilter
 
 class Well:
 
@@ -139,7 +139,7 @@ def xml_append_well_observations(file_path: str, well: Well) -> Well:
     well_bro_id = [f for f in file_path.split('\\')][-1][:-4]
 
     # Create instance
-    if not int(well_number) in well.well_observations.keys():
+    if not int(well_number) in well.well_filter.keys():
         wellobservation = wellFilter(common_bro_id, well_number, well_bro_id)
     else:
         wellobservation = well.get_filters(int(well_number))
