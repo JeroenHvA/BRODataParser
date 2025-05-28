@@ -2,12 +2,12 @@
 from typing import Dict, List
 import xml.etree.ElementTree as ET
 
-from .filter import wellFilter
+from .well_filter import wellFilter
 
 class Well:
 
-    def __init__(self, bro_id: str, well_surface_level: float, x_position: float, y_position: float):
-        self.bro_id = bro_id
+    def __init__(self, gld_bro_id: str, well_surface_level: float, x_position: float, y_position: float):
+        self.gld_bro_id = gld_bro_id ## common bro id
         self.well_filter: Dict[int, wellFilter] = {}
         self.well_surface_level = well_surface_level
         self.x_position = x_position
@@ -45,10 +45,36 @@ class Well:
         return {f"{i} --> {v.well_bro_id}": {"top position": v.screen_top_position, 
                                 "bottom position": v.screen_bottom_position} 
                                 for i, v in self.well_filter.items()}
+    def filter_to_csv(self, well_number: int, file_name: str) -> None:
+        """Export the well data to a CSV file.
+
+        Args:
+            well_number (int): The number of the well to export.
+        """
+        if well_number in self.well_filter.keys():
+            with open(file_name, 'w') as f:
+                data = self.well_filter[well_number]
+                f.write(f"surface level: {self.well_surface_level} \
+                            \nx position: {self.x_position} \
+                            \ny position: {self.y_position} \n")
+                f.write(f"gld bro id: {data.gld_bro_id} \
+                            \nwell number: {data.well_number} \
+                            \ntop position: {data.screen_top_position} \
+                            \nbottom position: {data.screen_bottom_position} \n\n")
+                if data.dataset.columns != None:
+                    f.write(",".join(data.dataset.columns) + "\n")
+                print(type(data.dataset))
+                for date_time, values in data.dataset.dataset.items():
+                    f.write(f"{date_time}," + ",".join([str(v) for v in values]) + "\n")
+
+        else:
+            print(f"Well number {well_number} not found in observations.")
 
     def __str__(self):
+        output = ""
         for well_number, observation in self.well_filter.items():
-            print(observation)
+            output += str(observation) + "\n"
+        return output
 
     def __len__(self):
         return len(self.well_filter)
@@ -82,7 +108,7 @@ def parse_gmw_wells(file_path: str) -> Well:
     # Extract surface level
     surface_level = float(gmw.find(".//gmwcommon:groundLevelPosition", namespaces=namespace).text)
 
-    _well = Well(bro_id=bro_id, well_surface_level=surface_level, x_position=x, y_position=y)
+    _well = Well(gld_bro_id=bro_id, well_surface_level=surface_level, x_position=x, y_position=y)
 
     for well in gmw.findall("monitoringTube", namespaces=namespace):
         well_number = int(well.findtext("tubeNumber", namespaces=namespace))
