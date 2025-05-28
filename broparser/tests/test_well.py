@@ -4,9 +4,6 @@ from pathlib import Path
 from os import path
 
 THIS_DIR = Path(__file__).parent
-print(THIS_DIR)
-
-
 
 class TestWellParsing(unittest.TestCase):
     def test_parse_gmw_wells(self):
