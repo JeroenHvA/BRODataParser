@@ -1,1 +1,1 @@
-from .core import parse_gmw_wells, xml_append_well_observations, Well
+from .core import read_well, append_filter_measurements, Well

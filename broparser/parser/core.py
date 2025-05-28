@@ -45,6 +45,18 @@ class Well:
         return {f"{i} --> {v.well_bro_id}": {"top position": v.screen_top_position, 
                                 "bottom position": v.screen_bottom_position} 
                                 for i, v in self.well_filter.items()}
+    
+    def pop_filter(self, well_number: int) -> None:
+        """Remove a filter from the well by its number.
+
+        Args:
+            well_number (int): The number of the filter to remove.
+        """
+        res = self.well_filter.pop(well_number)
+
+        if res == None:
+            print(f"Well number {well_number} not found in observations.")
+
     def filter_to_csv(self, well_number: int, file_name: str) -> None:
         """Export the well data to a CSV file.
 
@@ -81,7 +93,7 @@ class Well:
     
 
 
-def parse_gmw_wells(file_path: str) -> Well:
+def read_well(file_path: str) -> Well:
     """Function to parse xml IMBRO or IMBRO/A data downloaded from DinoLoket as IMBRO-XML files
 
     Args:
@@ -133,7 +145,7 @@ def parse_gmw_wells(file_path: str) -> Well:
         
     return _well
 
-def xml_append_well_observations(file_path: str, well: Well) -> Well:
+def append_filter_measurements(file_path: str, well: Well) -> Well:
     """Append a well observation to an existing Well object from an XML file.
     This function reads an XML file containing well observations and extracts the relevant data
     Warning: if Well is empty and if it lacks the well number, it will create a new well observation.
