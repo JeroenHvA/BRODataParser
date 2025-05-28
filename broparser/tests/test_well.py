@@ -18,9 +18,10 @@ class TestWellParsing(unittest.TestCase):
         self.assertIsInstance(updated_well, parser.Well)
 
     def test_well_to_csv(self):
+        filter = "data/GLD000000083930.xml"
         well = parser.parse_gmw_wells(path.join(THIS_DIR,"data/GMW000000015409.xml"))
-        well = parser.xml_append_well_observations(path.join(THIS_DIR,"data/GLD000000083930.xml"), well)
-        csv_file_path = path.join(THIS_DIR, "data/test_well.csv")
+        well = parser.xml_append_well_observations(path.join(THIS_DIR,filter), well)
+        csv_file_path = path.join(THIS_DIR, f"data/test_{filter[5:-4]}.csv")
         well.filter_to_csv(4, csv_file_path)
         self.assertTrue(path.exists(csv_file_path))
         with open(csv_file_path, 'r') as f:
