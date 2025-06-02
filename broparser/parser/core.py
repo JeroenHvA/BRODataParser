@@ -1,99 +1,44 @@
 # -*- coding: utf-8 -*-
 from typing import Dict, List
 import xml.etree.ElementTree as ET
+from datetime import datetime
 
-from .well_filter import wellFilter
+from well_filter import wellFilter, wellFilterData
 
 class Well:
 
-    def __init__(self, gld_bro_id: str, well_surface_level: float, x_position: float, y_position: float):
-        self.gld_bro_id = gld_bro_id ## common bro id
-        self.well_filter: Dict[int, wellFilter] = {}
+    def __init__(self, bro_id: str, well_surface_level: float, x_position: float, y_position: float):
+        self.bro_id = bro_id
+        self.well_observations: Dict[int, wellFilterData] = {}
         self.well_surface_level = well_surface_level
         self.x_position = x_position
         self.y_position = y_position
 
-    def add_filters(self, well_number, well_filter: wellFilter) -> None:
-        """ This function adds a wellFilter object to the well object.
+    def add_filters(self, well_number, wellobservation: wellFilterData) -> None:
+        """ Add a well observation to the well."""
+        self.well_observations[well_number] = wellobservation
 
-        Args:
-            well_number (_type_): Number of the filter, used to identify the filter in the well (tubeNumber)
-            well_filter (wellFilter): wellFilter object containing the filter data
-        """
-        self.well_filter[well_number] = well_filter
-
-    def get_filters(self, well_number: int) -> wellFilter:
-        """Get the filter object for a given well number.
-
-        Args:
-            well_number (int): number of the filter in the well (tubeNumber)
-
-        Returns:
-            wellFilter: returns the wellFilter object for the given well number
-        """
-        if well_number in self.well_filter.keys():
-            return self.well_filter[well_number]
+    def get_filters(self, well_number: int) -> Dict[int, wellFilterData]:
+        if well_number in self.well_observations.keys():
+            return self.well_observations[well_number]
         else:
             print(f"well number {well_number} not found in observations.")
             return None
-    def get_well_profile(self) -> dict:
-        """Returns a profile of all the filters in the well.
-
-        Returns:
-            dict: Dictionary with the well profile (top position and bottom position) of the filter
-        """
-        return {f"{i} --> {v.well_bro_id}": {"top position": v.screen_top_position, 
-                                "bottom position": v.screen_bottom_position} 
-                                for i, v in self.well_filter.items()}
-    
-    def pop_filter(self, well_number: int) -> None:
-        """Remove a filter from the well by its number.
-
-        Args:
-            well_number (int): The number of the filter to remove.
-        """
-        res = self.well_filter.pop(well_number)
-
-        if res == None:
-            print(f"Well number {well_number} not found in observations.")
-
-    def filter_to_csv(self, well_number: int, file_name: str) -> None:
-        """Export the well data to a CSV file.
-
-        Args:
-            well_number (int): The number of the well to export.
-        """
-        if well_number in self.well_filter.keys():
-            with open(file_name, 'w') as f:
-                data = self.well_filter[well_number]
-                f.write(f"surface level: {self.well_surface_level} \
-                            \nx position: {self.x_position} \
-                            \ny position: {self.y_position} \n")
-                f.write(f"gld bro id: {data.gld_bro_id} \
-                            \nwell number: {data.well_number} \
-                            \ntop position: {data.screen_top_position} \
-                            \nbottom position: {data.screen_bottom_position} \n\n")
-                if data.dataset.columns != None:
-                    f.write(",".join(data.dataset.columns) + "\n")
-                print(type(data.dataset))
-                for date_time, values in data.dataset.dataset.items():
-                    f.write(f"{date_time}," + ",".join([str(v) for v in values]) + "\n")
-
-        else:
-            print(f"Well number {well_number} not found in observations.")
+    def get_well_profile(self) -> List:
+            return {f"{i} --> {v.well_bro_id}": {"top position": v.screen_top_position, 
+                                    "bottom position": v.screen_bottom_position} 
+                                    for i, v in self.well_observations.items()}
 
     def __str__(self):
-        output = ""
-        for well_number, observation in self.well_filter.items():
-            output += str(observation) + "\n"
-        return output
+        for well_number, observation in self.well_observations.items():
+            print(observation)
 
     def __len__(self):
-        return len(self.well_filter)
+        return len(self.well_observations)
     
 
 
-def read_well(file_path: str) -> Well:
+def parse_gmw_wells(file_path: str) -> Well:
     """Function to parse xml IMBRO or IMBRO/A data downloaded from DinoLoket as IMBRO-XML files
 
     Args:
@@ -120,7 +65,7 @@ def read_well(file_path: str) -> Well:
     # Extract surface level
     surface_level = float(gmw.find(".//gmwcommon:groundLevelPosition", namespaces=namespace).text)
 
-    _well = Well(gld_bro_id=bro_id, well_surface_level=surface_level, x_position=x, y_position=y)
+    _well = Well(bro_id=bro_id, well_surface_level=surface_level, x_position=x, y_position=y)
 
     for well in gmw.findall("monitoringTube", namespaces=namespace):
         well_number = int(well.findtext("tubeNumber", namespaces=namespace))
@@ -145,18 +90,7 @@ def read_well(file_path: str) -> Well:
         
     return _well
 
-def append_filter_measurements(file_path: str, well: Well) -> Well:
-    """Append a well observation to an existing Well object from an XML file.
-    This function reads an XML file containing well observations and extracts the relevant data
-    Warning: if Well is empty and if it lacks the well number, it will create a new well observation.
-
-    Args:
-        file_path (str): path to the XML file containing well data
-        well (Well): An existing Well object with filter, to which data will be added
-
-    Returns:
-        Well: Well object with filter data added from the XML file
-    """
+def xml_append_well_observations(file_path: str, well: Well) -> Well:
     # Register namespaces with prefixes
     namespaces = {
         'dsgld': 'http://www.broservices.nl/xsd/dsgld/1.0',
@@ -168,7 +102,7 @@ def append_filter_measurements(file_path: str, well: Well) -> Well:
     }
 
     # Load and parse the XML file
-    tree = ET.parse(file_path)
+    tree = ET.parse(file_path)  # replace with actual file path
     root = tree.getroot()
 
     # Extract broId and wellNumber
@@ -177,7 +111,7 @@ def append_filter_measurements(file_path: str, well: Well) -> Well:
     well_bro_id = [f for f in file_path.split('\\')][-1][:-4]
 
     # Create instance
-    if not int(well_number) in well.well_filter.keys():
+    if not int(well_number) in well.well_observations.keys():
         wellobservation = wellFilter(common_bro_id, well_number, well_bro_id)
     else:
         wellobservation = well.get_filters(int(well_number))
