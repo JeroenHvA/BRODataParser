@@ -1,4 +1,35 @@
 from datetime import datetime
+from collections import defaultdict
+
+
+#!!Warning that NA values now are -9999, TODO define new class with NA values
+class DTFilter:
+
+    def __init__(self, from_date: datetime = None, to_date: datetime = None):
+        """Initialize the DTFilter with optional from and to dates."""
+        self._from_date = from_date
+        self._to_date = to_date
+
+    @property
+    def from_date(self):
+        """Set the from date for the filter."""
+        return self._from_date
+
+    @from_date.setter
+    def from_date(self, from_date: datetime) -> None:
+        """Set the from date for the filter."""
+        self._from_date = from_date
+
+    @property  
+    def to_date(self):
+        """Get the to date for the filter."""
+        return self._to_date
+    
+    @to_date.setter
+    def to_date(self, to_date: datetime) -> None:
+        """Set the to date for the filter."""
+        self._to_date = to_date
+
 
 class Statistics:
 
@@ -48,6 +79,7 @@ class Statistics:
         a = numer / denom
         b = mean_y - a * mean_x
         return (a, b)
+    
     @staticmethod
     def sum(dataset: dict, column_index: int = 0) -> float:
         """Calculate the sum of the values in the dataset.
@@ -74,3 +106,117 @@ class Statistics:
         if n == 0:
             return 0.0
         return Statistics.sum(dataset, column_index) / n
+    
+    @staticmethod
+    def min(dataset: dict, column_index: int = 0) -> float:
+        """Calculate the minimum value in the dataset.
+
+        Args:
+            dataset (dict): input dataset
+
+        Returns:
+            float: minimum value
+        """
+        return min(vals[column_index] for vals in dataset.values())
+    
+    @staticmethod
+    def max(dataset: dict, column_index: int = 0) -> float:
+        """Calculate the maximum value in the dataset.
+
+        Args:
+            dataset (dict): input dataset
+
+        Returns:
+            float: maximum value
+        """
+        return max(vals[column_index] for vals in dataset.values())
+    
+class HydrologicalStatistics(Statistics):
+
+    @staticmethod
+    def GLG(dataset: dict, column_index: int = 0, num_hydrological_years: int = 8) -> float:
+        """Calculate the Gemiddeld Laagste Grondwaterstand (GLG) for the dataset,
+        as an 8-year average based on the hydrological year (April 1 - March 31).
+
+        Args:
+            dataset (dict): input dataset with datetime keys and list of values
+            column_index (int, optional): index of the column to use. Defaults to 0.
+            num_hydrological_years (int, optional): number of hydrological years to consider. Defaults to 8.
+
+        Returns:
+            float: GLG value
+        """
+
+        _v = HydrologicalStatistics.__last_sorted_items(dataset, column_index, num_hydrological_years, sort_from_low = True)
+
+        if _v:
+            return sum(_v) / len(_v)
+        
+    @staticmethod
+    def GHG(dataset: dict, column_index: int = 0, num_hydrological_years: int = 8) -> float:
+        """Calculate the Gemiddeld Hoogste Grondwaterstand (GHG) for the dataset,
+        as an 8-year average based on the hydrological year (April 1 - March 31).
+
+        Args:
+            dataset (dict): input dataset with datetime keys and list of values
+            column_index (int, optional): index of the column to use. Defaults to 0.
+            num_hydrological_years (int, optional): number of hydrological years to consider. Defaults to 8.
+
+        Returns:
+            float: GHG value
+        """
+        _v = HydrologicalStatistics.__last_sorted_items(dataset, column_index, num_hydrological_years, sort_from_low = False)
+
+        if _v != None:
+            return sum(_v) / len(_v)
+        else:
+            return 0.0
+
+    @staticmethod
+    def __last_sorted_items(dataset: dict, column_index: int, num_hydrological_years: int, sort_from_low: bool = True) -> float:
+        """_summary_
+
+        Args:
+            years_to_use (list): list of years to use
+            yearly_values (dict): _description_
+            sort_from_low (True): _description_
+
+        Returns:
+            list: _description_
+        """
+        # Sort hydrological years and select the most recent 8 years
+        sorted_years = HydrologicalStatistics.__sorted_hydrological_year(dataset, column_index)
+        if len(sorted_years.keys()) <= num_hydrological_years:
+            print(f"Not enough years available for GLG calculation (only {len(sorted_years)}), using all available years.")
+            return None
+        print(sorted_years)
+        years_to_use = sorted_years[-num_hydrological_years:]
+
+        _v = []
+        for year in years_to_use:
+            values = sorted_years[year]
+            if len(values) < 3:
+                continue
+            lowest_three = sorted(values, reverse = sort_from_low)[:3]
+            _v.append(sum(lowest_three) / 3)
+
+        if  _v:
+            return _v
+        else:
+            return None
+
+    @staticmethod
+    def __sorted_hydrological_year(dataset: dict, column_index: int) -> dict:
+        # For each hydrological year, get the 3 lowest values and average them
+        yearly_values = HydrologicalStatistics.__hydrological_year(dataset, column_index)
+        return {v: yearly_values[v] for v in sorted(yearly_values.keys())}
+    
+    @staticmethod
+    def __hydrological_year(dataset: dict, column_index: int) -> dict:
+        # Group values by hydrological year (April 1 - March 31)
+        yearly_values = defaultdict(list)
+        for dt, vals in dataset.items():
+            hydro_year = dt.year if dt.month >= 4 else dt.year - 1
+            yearly_values[hydro_year].append(vals[column_index])
+        return yearly_values
+    

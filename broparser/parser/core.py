@@ -194,7 +194,7 @@ def append_filter_measurements(file_path: str, well: Well) -> Well:
             if time_el.text is not None:
                 value = value_el.text
                 if value is None:
-                    value = (-9999)
+                    continue
                 v = [float(value), ""]
                 e = wellobservation.dataset.add_observation(time_el.text, v, None, True)
                 if e != None:

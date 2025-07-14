@@ -3,6 +3,7 @@ from typing import Dict, List
 from datetime import datetime
 
 from .dataframe import wellFilterData
+from .statistics import HydrologicalStatistics as HStat
 
 class wellFilter:
     def __init__(self, gld_bro_id, well_number, well_bro_id):
@@ -16,7 +17,7 @@ class wellFilter:
         self.screen_top_position = None
         self.screen_bottom_position = None
 
-        self.dataset = wellFilterData()  # dictionary with 
+        self.dataset = wellFilterData()  # dictionary with the data in a wellFilterData object 
         self.start_date = None
         self.end_date = None
 
@@ -65,6 +66,36 @@ class wellFilter:
             self.end_date = max(self.dataset.dataset.keys())
         return self.end_date
 
+    def GLG(self, column_index: int = 0, num_hydrological_years: int = 8, start_from: datetime = None, end_from: datetime = None) -> float:
+        """ Calculate the Gemiddeld Laagste Grondwaterstand (GLG) on the specific wellFilter
+
+        Args:
+            column_index (int8): The column that contains the data
+            num_hydrological_years (int8): The amount of hydrological years to calculate GLG on. Defaults to 8
+            start_from (datetime, optional): To subset from a specific start date. Defaults to None.
+            end_from (datetime, optional): To subset from a specific end date. Defaults to None.
+
+        Returns:
+            float: GLG value
+        """
+        data = self.subset_observations(start_from, end_from)
+        return HStat.GLG(data, column_index=column_index, num_hydrological_years=num_hydrological_years)
+    
+    def GHG(self, column_index: int = 0, num_hydrological_years: int = 8, start_from: datetime = None, end_from: datetime = None) -> float:
+        """ Calculate the Gemiddeld Hoogste Grondwaterstand (GHG) on the specific wellFilter
+
+        Args:
+            column_index (int8): The column that contains the data
+            num_hydrological_years (int8): The amount of hydrological years to calculate GLG on. Defaults to 8
+            start_from (datetime, optional): To subset from a specific start date. Defaults to None.
+            end_from (datetime, optional): To subset from a specific end date. Defaults to None.
+
+        Returns:
+            float: GHG value 
+        """
+        data = self.subset_observations(start_from, end_from)
+        return HStat.GLG(data, column_index=column_index, num_hydrological_years=num_hydrological_years)
+    
     
     def __repr__(self):
         return self.dataset.__repr__()

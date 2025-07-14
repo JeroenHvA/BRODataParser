@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, List
 from datetime import datetime
-from .statistics import Statistics
+from .statistics import Statistics, DTFilter
 
 @dataclass
 class wellFilterData:
@@ -87,54 +87,95 @@ class wellFilterData:
         self.dataset = dict(sorted(self.dataset.items(), key = lambda item: item[0]))
         return self.dataset
     
-    def linear_regression(self, column_index: int = 0, excel_date: bool = False) -> tuple:
+    def linear_regression(self, column_index: int = 0, excel_date: bool = False, dt_filter: DTFilter = None) -> tuple:
         """Calculate the linear regression of the dataset.
 
         Args:
             column_index (int, optional): index of the column to use for regression. Defaults to 0.
             excel_date (bool, optional): whether to use 1970,1,1 as starting date or conform to excel dateformat (starting 1899,12,30). Defaults to False.
-
+            dt_filter (DTFilter, optional): filter to apply on the dataset. Defaults to None.
+            
         Returns:
             tuple: with slope (a) and intercept (b) of the linear regression line.
         """
+        if dt_filter is not None:
+            return Statistics.linear_regression(self.subset_observations(dt_filter.from_date, dt_filter.to_date), column_index, excel_date)
         return Statistics.linear_regression(self.dataset, column_index, excel_date)	
     
-    def sum(self, column_index: int = 0) -> float:
+    def sum(self, column_index: int = 0, dt_filter: DTFilter = None) -> float:
         """Calculate the sum of the values in the dataset.
 
         Args:
             column_index (int, optional): index of the column to use for sum. Defaults to 0.
+            dt_filter (DTFilter, optional): filter to apply on the dataset. Defaults to None.
 
         Returns:
             float: sum of the values in the specified column.
         """
+        if dt_filter is not None:
+            return Statistics.sum(self.subset_observations(dt_filter.from_date, dt_filter.to_date), column_index)
+        
         return Statistics.sum(self.dataset, column_index)
     
-    def mean(self, column_index: int = 0) -> float:
+    def mean(self, column_index: int = 0, dt_filter: DTFilter = None) -> float:
         """Calculate the mean of the values in the dataset.
 
         Args:
             column_index (int, optional): index of the column to use for mean. Defaults to 0.
+            dt_filter (DTFilter, optional): filter to apply on the dataset. Defaults to None.
 
         Returns:
             float: mean of the values in the specified column.
         """
+        if dt_filter is not None:
+            return Statistics.mean(self.subset_observations(dt_filter.from_date, dt_filter.to_date), column_index)
+        
         return Statistics.mean(self.dataset, column_index)
     
-    def calculate_statistics(self, column_index: int = 0) -> None:
+    def min(self, column_index: int = 0, dt_filter: DTFilter = None) -> float:
+        """Calculate the minimum value in the dataset.
+
+        Args:
+            column_index (int, optional): index of the column to use for min. Defaults to 0.
+            dt_filter (DTFilter, optional): filter to apply on the dataset. Defaults to None.
+
+        Returns:
+            float: minimum value in the specified column.
+        """
+        if dt_filter is not None:
+            return Statistics.min(self.subset_observations(dt_filter.from_date, dt_filter.to_date), column_index)
+        
+        return Statistics.min(self.dataset, column_index)
+    
+    def max(self, column_index: int = 0, dt_filter: DTFilter = None) -> float:
+        """Calculate the maximum value in the dataset.
+
+        Args:
+            column_index (int, optional): index of the column to use for max. Defaults to 0.
+            dt_filter (DTFilter, optional): filter to apply on the dataset. Defaults to None.
+
+        Returns:
+            float: maximum value in the specified column.
+        """
+        if dt_filter is not None:
+            return Statistics.max(self.subset_observations(dt_filter.from_date, dt_filter.to_date), column_index)
+        
+        return Statistics.max(self.dataset, column_index)
+    
+    def calculate_statistics(self, column_index: int = 0, dt_filter: DTFilter = None) -> dict:
         """Calculate statistics for the dataset and store them in the statistics attribute.
 
         Args:
             column_index (int, optional): indices of the column to use for statistics. Defaults to 0.
+            dt_filter (DTFilter, optional): filter to apply on the dataset. Defaults to None.
         
         Returns:
-            None
+            dict: A dictionary containing the calculated statistics (sum, mean, linear regression).
         """
-
         self.statistics = {
-            "sum": self.sum(column_index),
-            "mean": self.mean(column_index),
-            "linear_regression": self.linear_regression(column_index)
+            "sum": self.sum(column_index, dt_filter),
+            "mean": self.mean(column_index, dt_filter),
+            "linear_regression": self.linear_regression(column_index, dt_filter)
         }
         return self.statistics
     

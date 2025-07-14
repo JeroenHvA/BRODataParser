@@ -1,4 +1,4 @@
-from .context import parser
+from context import parser
 import unittest
 from pathlib import Path
 from os import path
@@ -39,7 +39,8 @@ class TestWellParsing(unittest.TestCase):
         self.assertGreater(len(filter.dataset.dataset), 0)
         filter.dataset.calculate_statistics()
         self.assertEqual(filter.dataset.mean(), filter.dataset.statistics['mean'])
-        
+        GLG = filter.GLG()
+        self.assertGreater(GLG, 0.0)
 
 
 if __name__ == "__main__":
